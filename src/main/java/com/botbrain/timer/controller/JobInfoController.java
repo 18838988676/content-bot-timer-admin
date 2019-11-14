@@ -2,9 +2,7 @@ package com.botbrain.timer.controller;
 
 import com.botbrain.timer.core.cron.CronExpression;
 import com.botbrain.timer.core.exception.XxlJobException;
-import com.botbrain.timer.core.model.XxlJobGroup;
-import com.botbrain.timer.core.model.XxlJobInfo;
-import com.botbrain.timer.core.model.XxlJobUser;
+import com.botbrain.timer.core.model.*;
 import com.botbrain.timer.core.route.ExecutorRouteStrategyEnum;
 import com.botbrain.timer.core.thread.JobTriggerPoolHelper;
 import com.botbrain.timer.core.trigger.TriggerTypeEnum;
@@ -18,6 +16,7 @@ import com.xxl.job.core.glue.GlueTypeEnum;
 import com.xxl.job.core.util.DateUtil;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -95,8 +94,15 @@ public class JobInfoController {
 	public Map<String, Object> pageList(@RequestParam(required = false, defaultValue = "0") int start,  
 			@RequestParam(required = false, defaultValue = "10") int length,
 			int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author) {
-		
 		return xxlJobService.pageList(start, length, jobGroup, triggerStatus, jobDesc, executorHandler, author);
+	}
+
+	@RequestMapping("/pageListGroup")
+	@ResponseBody
+	public PageResults pageListByGroup(@RequestParam(required = false, defaultValue = "0") int start,
+									   @RequestParam(required = false, defaultValue = "10") int length,
+									   int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author) {
+		return xxlJobService.pageListByGroup(start, length, jobGroup, triggerStatus, jobDesc, executorHandler, author);
 	}
 	
 	@RequestMapping("/add")
@@ -111,24 +117,46 @@ public class JobInfoController {
 		return xxlJobService.update(jobInfo);
 	}
 	
+	@RequestMapping("/removeBatch")
+	@ResponseBody
+	public ReturnT<String> removeBatch() {
+		String ids="1,2,3,4";
+		return xxlJobService.removeBatch(null,ids);
+	}
+
 	@RequestMapping("/remove")
 	@ResponseBody
 	public ReturnT<String> remove(int id) {
 		return xxlJobService.remove(id);
 	}
-	
+
+	@RequestMapping("/stopBatch")
+	@ResponseBody
+	public ReturnT<String> pauseBatch() {
+		String ids="1,2,3,4";
+		return xxlJobService.pauseBatch(null,ids);
+	}
+
 	@RequestMapping("/stop")
 	@ResponseBody
 	public ReturnT<String> pause(int id) {
 		return xxlJobService.stop(id);
 	}
-	
+
+
 	@RequestMapping("/start")
 	@ResponseBody
 	public ReturnT<String> start(int id) {
 		return xxlJobService.start(id);
 	}
-	
+
+	@RequestMapping("/startBatch")
+	@ResponseBody
+	public ReturnT<String> startBatch() {
+		String ids="1,2,3,4";
+		return xxlJobService.startBatch(null,ids);
+	}
+
 	@RequestMapping("/trigger")
 	@ResponseBody
 	//@PermissionLimit(limit = false)
@@ -162,5 +190,5 @@ public class JobInfoController {
 		}
 		return new ReturnT<List<String>>(result);
 	}
-	
+
 }

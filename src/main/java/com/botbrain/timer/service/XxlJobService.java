@@ -1,10 +1,13 @@
 package com.botbrain.timer.service;
 
 
+import com.botbrain.timer.core.model.PageResults;
+import com.botbrain.timer.core.model.ResponseData;
 import com.botbrain.timer.core.model.XxlJobInfo;
 import com.xxl.job.core.biz.model.ReturnT;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -83,4 +86,11 @@ public interface XxlJobService {
 	 */
 	public ReturnT<Map<String,Object>> chartInfo(Date startDate, Date endDate);
 
+    ReturnT<String> startBatch(String groupId, String ids);
+
+	ReturnT<String> pauseBatch(String groupId, String ids);
+
+	ReturnT<String> removeBatch(String groupId, String ids);
+
+	PageResults pageListByGroup(int start, int length, int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author);
 }

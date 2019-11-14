@@ -1,6 +1,8 @@
 package com.botbrain.timer.service.impl;
 
 import com.botbrain.timer.core.cron.CronExpression;
+import com.botbrain.timer.core.model.PageResults;
+import com.botbrain.timer.core.model.ResponseData;
 import com.botbrain.timer.core.model.XxlJobGroup;
 import com.botbrain.timer.core.model.XxlJobInfo;
 import com.botbrain.timer.core.route.ExecutorRouteStrategyEnum;
@@ -17,7 +19,9 @@ import com.xxl.job.core.glue.GlueTypeEnum;
 import com.xxl.job.core.util.DateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.text.MessageFormat;
@@ -40,7 +44,8 @@ public class XxlJobServiceImpl implements XxlJobService {
 	public XxlJobLogDao xxlJobLogDao;
 	@Resource
 	private XxlJobLogGlueDao xxlJobLogGlueDao;
-	
+//	@Autowired
+//	private ConfigFeignClient configFeignClient;
 	@Override
 	public Map<String, Object> pageList(int start, int length, int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author) {
 
@@ -54,6 +59,33 @@ public class XxlJobServiceImpl implements XxlJobService {
 	    maps.put("recordsFiltered", list_count);	// 过滤后的总记录数
 	    maps.put("data", list);  					// 分页列表
 		return maps;
+	}
+
+	@Override
+	public PageResults pageListByGroup(int start, int length, int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author) {
+		PageResults pageResults=new PageResults();
+
+		//查询出所有顶级任务（jobInfoGroupParentId=-1），但不包含具体公司
+		List<XxlJobInfo> xxlJobInfos = xxlJobInfoDao.pageListByGroup(start, length, jobGroup, triggerStatus, jobDesc, executorHandler, author);
+		if(CollectionUtils.isEmpty(xxlJobInfos)){return pageResults;}
+		int list_count = xxlJobInfoDao.pageListCountByGroup(start, length, jobGroup, triggerStatus, jobDesc, executorHandler, author);
+
+		List<ResponseData> list=new ArrayList<>(20);
+		xxlJobInfos.stream().forEach(xxlJobInfo -> {
+			//顶级任务列表
+			ResponseData responseData=new ResponseData();
+			BeanUtils.copyProperties(xxlJobInfo,responseData);
+			//具体公司任务列表
+			List<XxlJobInfo> jobs=	xxlJobInfoDao.getAllJobsByGroupId(xxlJobInfo.getId());
+			if(!CollectionUtils.isEmpty(jobs)){
+				responseData.setExtend(true);
+				responseData.setXxlJobInfos(jobs);
+			}
+			list.add(responseData);
+		});
+		pageResults.setRecordsTotal(String.valueOf(list_count));
+		pageResults.setDatas(list);
+		return pageResults;
 	}
 
 	@Override
@@ -116,12 +148,39 @@ public class XxlJobServiceImpl implements XxlJobService {
 			jobInfo.setChildJobId(temp);
 		}
 
-		// add in db
+		// add in db  针对os_key问题。
+		// -1代表任务，非-1代表某一任务下的子任务；
+		//{"任务ID":"1","任务名称":"点名","cron":"******","JobInfoGroupParentId":"-1",......},
+		//{"任务ID":"2","任务名称":"百度公司执行点名任务","cron":"******","JobInfoGroupParentId":"1",......},
+		//{"任务ID":"3","任务名称":"新浪公司执行点名任务","cron":"******","JobInfoGroupParentId":"1",......},
+		// 不存在os_key问题时的任务添加：也会添加-1，只是列表页是否扩展问题上，会判断下该id下是否有子数据
+		jobInfo.setJobInfoGroupParentId(-1);
 		xxlJobInfoDao.save(jobInfo);
 		if (jobInfo.getId() < 1) {
 			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_add")+ I18nUtil.getString("system_fail")) );
 		}
 
+		//先 判断一下 如果任务插入成功后并且任务中的执行参数url中带有os_key的话  就将各企业按照此任务配置进行批量配置
+		if(jobInfo.getId()>0&&jobInfo.getExecutorParam().contains("{os_key}")){
+//			List<Map<String, Object>> osList1 = configFeignClient.findAll(3, "").getData();
+			List<String> osList=new ArrayList<>();
+			osList.add("百度");
+			osList.add("谷歌");
+			osList.add("SUN");
+			osList.add("微软");
+			List<XxlJobInfo> xxlJobInfoList=new ArrayList<>(30);
+
+			for (String dataos : osList ) {
+				XxlJobInfo newXxlJobInfo=new XxlJobInfo();
+				BeanUtils.copyProperties(jobInfo,newXxlJobInfo);
+				newXxlJobInfo.setJobInfoGroupParentId(jobInfo.getId());
+				newXxlJobInfo.setExecutorParam(jobInfo.getExecutorParam().replace("{os_key}",dataos));
+				newXxlJobInfo.setJobDesc(jobInfo.getJobDesc()+"任务下发到:"+dataos);
+				xxlJobInfoList.add(newXxlJobInfo);
+			}
+		int num=xxlJobInfoDao.saveBatch(xxlJobInfoList);
+			System.out.println(num);
+		}
 		return new ReturnT<String>(String.valueOf(jobInfo.getId()));
 	}
 
@@ -264,6 +323,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 		return ReturnT.SUCCESS;
 	}
 
+
 	@Override
 	public ReturnT<String> stop(int id) {
         XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(id);
@@ -366,5 +426,71 @@ public class XxlJobServiceImpl implements XxlJobService {
 
 		return new ReturnT<Map<String, Object>>(result);
 	}
+
+	@Override
+	public ReturnT<String> startBatch(String groupId, String idstr) {
+
+		if(idstr!=null&&idstr.length()!=0){
+			List<String> ids= Arrays.asList(idstr.split(","));
+			for (String id: ids) {
+				XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(Integer.parseInt(id));
+				if (xxlJobInfo != null) {
+					// next trigger time (5s后生效，避开预读周期)
+					long nextTriggerTime = 0;
+					try {
+						Date nextValidTime = new CronExpression(xxlJobInfo.getJobCron()).getNextValidTimeAfter(new Date(System.currentTimeMillis() + JobScheduleHelper.PRE_READ_MS));
+						if (nextValidTime == null) {
+							return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_never_fire"));
+						}
+						nextTriggerTime = nextValidTime.getTime();
+					} catch (ParseException e) {
+						logger.error(e.getMessage(), e);
+						return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("jobinfo_field_cron_unvalid")+" | "+ e.getMessage());
+					}
+					xxlJobInfo.setTriggerStatus(1);
+					xxlJobInfo.setTriggerLastTime(0);
+					xxlJobInfo.setTriggerNextTime(nextTriggerTime);
+					xxlJobInfoDao.update(xxlJobInfo);
+
+				}
+			}
+		}
+		return ReturnT.SUCCESS;
+	}
+
+
+	@Override
+	public ReturnT<String> pauseBatch(String groupId, String idstr) {
+		if(idstr!=null&&idstr.length()!=0){
+			List<String> ids= Arrays.asList(idstr.split(","));
+			for (String id: ids) {
+				XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(Integer.parseInt(id));
+				if (xxlJobInfo != null) {
+					xxlJobInfo.setTriggerStatus(0);
+					xxlJobInfo.setTriggerLastTime(0);
+					xxlJobInfo.setTriggerNextTime(0);
+					xxlJobInfoDao.update(xxlJobInfo);
+				}
+			}
+		}
+		return ReturnT.SUCCESS;
+	}
+
+	@Override
+	public ReturnT<String> removeBatch(String groupId, String idstr) {
+		if(idstr!=null&&idstr.length()!=0){
+			List<String> ids= Arrays.asList(idstr.split(","));
+			for (String id: ids) {
+				XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(Integer.parseInt(id));
+				if (xxlJobInfo != null) {
+					xxlJobInfoDao.delete(Integer.parseInt(id));
+					xxlJobLogDao.delete(Integer.parseInt(id));
+					xxlJobLogGlueDao.deleteByJobId(Integer.parseInt(id));
+				}
+			}
+		}
+		return ReturnT.SUCCESS;
+	}
+
 
 }

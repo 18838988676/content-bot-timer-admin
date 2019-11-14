@@ -39,6 +39,15 @@ public class XxlJobInfo {
 	private long triggerLastTime;	// 上次调度时间
 	private long triggerNextTime;	// 下次调度时间
 
+	private int jobInfoGroupParentId; //一组任务;
+
+	public int getJobInfoGroupParentId() {
+		return jobInfoGroupParentId;
+	}
+
+	public void setJobInfoGroupParentId(int jobInfoGroupParentId) {
+		this.jobInfoGroupParentId = jobInfoGroupParentId;
+	}
 
 	public int getId() {
 		return id;
