@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.text.MessageFormat;
@@ -154,7 +155,16 @@ public class XxlJobServiceImpl implements XxlJobService {
 		//{"任务ID":"2","任务名称":"百度公司执行点名任务","cron":"******","JobInfoGroupParentId":"1",......},
 		//{"任务ID":"3","任务名称":"新浪公司执行点名任务","cron":"******","JobInfoGroupParentId":"1",......},
 		// 不存在os_key问题时的任务添加：也会添加-1，只是列表页是否扩展问题上，会判断下该id下是否有子数据
-		jobInfo.setJobInfoGroupParentId(-1);
+		if(StringUtils.isEmpty(jobInfo.getExecutorParam())){
+			//任务中不带参数的；简单任务
+			jobInfo.setJobInfoGroupParentId(0);
+		}else if(!StringUtils.isEmpty(jobInfo.getExecutorParam())&&jobInfo.getExecutorParam().contains("{os_key}")){
+			//任务中带参数，且参数带os_key；复杂任务
+			jobInfo.setJobInfoGroupParentId(-1);
+		}else {
+			//任务中带参数，但参数不带os_key；简单任务
+			jobInfo.setJobInfoGroupParentId(0);
+		}
 		xxlJobInfoDao.save(jobInfo);
 		if (jobInfo.getId() < 1) {
 			return new ReturnT<String>(ReturnT.FAIL_CODE, (I18nUtil.getString("jobinfo_field_add")+ I18nUtil.getString("system_fail")) );
