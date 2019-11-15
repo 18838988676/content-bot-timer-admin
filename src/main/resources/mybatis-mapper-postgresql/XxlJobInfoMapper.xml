@@ -89,6 +89,24 @@
 		FROM xxl_job_info AS t where t.jobinfogroupparentid=#{id}
 	</select>
 
+	<select id="findJobInfoConfigPublic" resultMap="XxlJobInfo">
+		SELECT <include refid="Base_Column_List" />
+		FROM xxl_job_info AS t where t.jobinfogroupparentid= -1
+	</select>
+
+	<!--<delete id="deleteBatch" parameterMap="java.util.HashMap" >
+		DELETE * from xxl_job_info AS t where t.executor_param like CONCAT(CONCAT('%', #{oskey}), '%')
+		and t.id in
+		<foreach collection="list" item="id" open="(" close=")" separator=",">
+			#{id}
+	</foreach>
+	</delete>-->
+
+	<select id="findJobInfoConfigPublicId" resultType="Integer">
+		SELECT  id
+		FROM xxl_job_info AS t where t.jobinfogroupparentid= -1
+	</select>
+
 	<select id="pageListByGroup" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
         SELECT <include refid="Base_Column_List" />
         FROM xxl_job_info AS t

@@ -66,4 +66,9 @@ public interface XxlJobInfoDao {
 
 	public int scheduleUpdate(XxlJobInfo xxlJobInfo);
 
+    List<XxlJobInfo> findJobInfoConfigPublic();
+
+	List<Integer> findJobInfoConfigPublicId();
+
+//	public int deleteBatch(@Param("ids") List<Integer> ids,@Param("oskey") String str);
 }
