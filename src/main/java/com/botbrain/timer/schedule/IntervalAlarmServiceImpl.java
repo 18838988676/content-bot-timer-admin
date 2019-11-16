@@ -1,12 +1,11 @@
-package com.botbrain.timer.core.util;
+package com.botbrain.timer.schedule;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.*;
 
 /**
@@ -15,20 +14,21 @@ import java.util.concurrent.*;
  * @Date: 2019/11/5.
  * @Description:数据去重== 重复报警
  **/
-@Configuration("intervalAlarmService")
+@Component
 public class IntervalAlarmServiceImpl implements IntervalAlarmService {
 
-    private ConcurrentHashMap<String, Long> concurrentHashMap;
-    @Autowired
-    private ScheduledExecutorService scheduledExecutorServiceAlarm;
+    private ConcurrentHashMap<String, Long> concurrentHashMap = new ConcurrentHashMap<String, Long>();
+
+    private ScheduledExecutorService scheduledExecutorService = new ScheduledThreadPoolExecutor(5, new ThreadFactory() {
+        @Override
+        public Thread newThread(Runnable r) {
+            int num = 0;
+            return new Thread(r, "saveAlarmForInterval-thread:" + num++);
+        }
+    });
 
     public IntervalAlarmServiceImpl() {
-    }
-
-    @PostConstruct
-    public void init(){
-        concurrentHashMap = new ConcurrentHashMap<String, Long>();
-        scheduledExecutorServiceAlarm.scheduleWithFixedDelay(this::removeOutOfData,1,2,TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleWithFixedDelay(this::removeOutOfData,1,2,TimeUnit.SECONDS);
     }
 
 
@@ -36,6 +36,7 @@ public class IntervalAlarmServiceImpl implements IntervalAlarmService {
      * 剔除已经过期的key
      */
     private void removeOutOfData() {
+        System.out.println(Thread.currentThread().getName());
         long nowTime= System.currentTimeMillis();
         if (!CollectionUtils.isEmpty(concurrentHashMap)) {
             for (Map.Entry<String, Long> entry : concurrentHashMap.entrySet()) {

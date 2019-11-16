@@ -6,22 +6,18 @@ import com.botbrain.timer.core.model.XxlJobInfo;
 import com.botbrain.timer.core.model.XxlJobLog;
 import com.botbrain.timer.core.trigger.TriggerTypeEnum;
 import com.botbrain.timer.core.util.I18nUtil;
-import com.botbrain.timer.core.util.IntervalAlarmService;
 import com.botbrain.timer.core.util.MD5Util;
+import com.botbrain.timer.schedule.IntervalAlarmService;
+import com.botbrain.timer.schedule.IntervalAlarmServiceImpl;
 import com.xxl.job.core.biz.model.ReturnT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.util.StringUtils;
 
 import javax.mail.internet.MimeMessage;
 import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -29,11 +25,10 @@ import java.util.concurrent.TimeUnit;
  *
  * @author xuxueli 2015-9-1 18:05:56
  */
-
 public class JobFailMonitorHelper {
 
-	@Autowired
-	private IntervalAlarmService intervalAlarmService;
+	private IntervalAlarmService intervalAlarmService = new IntervalAlarmServiceImpl();
+
 	private static Logger logger = LoggerFactory.getLogger(JobFailMonitorHelper.class);
 
 	private static JobFailMonitorHelper instance = new JobFailMonitorHelper();
@@ -46,6 +41,7 @@ public class JobFailMonitorHelper {
 	private Thread monitorThread;
 	private volatile boolean toStop = false;
 	public void start(){
+
 		monitorThread = new Thread(new Runnable() {
 
 			@Override
@@ -54,7 +50,6 @@ public class JobFailMonitorHelper {
 				// monitor
 				while (!toStop) {
 					try {
-
 						List<Long> failLogIds = XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().findFailJobLogIds(1000);
 						if (failLogIds!=null && !failLogIds.isEmpty()) {
 							for (long failLogId: failLogIds) {
@@ -85,6 +80,9 @@ public class JobFailMonitorHelper {
 										//是否能发送报警了
 										if(canAlarm){
 											alarmResult = failAlarm(info, log);
+											System.out.println("能发邮件"+info.getId()+"==="+info.getAlarmEmail()+"=="+Calendar.getInstance().get(Calendar.SECOND));
+										}else {
+											System.out.println("不能发邮件"+info.getId()+"==="+info.getAlarmEmail()+"=="+Calendar.getInstance().get(Calendar.SECOND));
 										}
 
 									} catch (Exception e) {

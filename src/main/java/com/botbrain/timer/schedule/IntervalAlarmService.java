@@ -1,4 +1,4 @@
-package com.botbrain.timer.core.util;
+package com.botbrain.timer.schedule;
 
 
 /**
