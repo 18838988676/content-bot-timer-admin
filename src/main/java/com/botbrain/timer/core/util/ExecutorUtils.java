@@ -20,16 +20,54 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 @Configuration
 public class ExecutorUtils {
 
-    @Bean("scheduledExecutorService")
-    public ScheduledExecutorService getScheduledExecutorTask(){
-        ScheduledExecutorService executorService= Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+    //new
+    @Bean("scheduledExecutorServiceCheck")
+    public ScheduledExecutorService getScheduledExecutorTaskforCheckOskey() {
+        ScheduledExecutorService sc = new ScheduledThreadPoolExecutor(5, new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
-                int num=0;
-                return new Thread(r,"check-osKey-changeThread"+num++);
+                int num = 0;
+                return new Thread(r, "check-osKey-changeThread：" + num++);
             }
         });
-        return  executorService;
+        return sc;
+    }
+
+    //    @Bean("old")
+    public ScheduledExecutorService oldgetScheduledExecutorTaskforCheckOskey() {
+        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                int num = 0;
+                return new Thread(r, "check-osKey-changeThread：" + num++);
+            }
+        });
+        return executorService;
+    }
+
+
+    //new
+    @Bean("scheduledExecutorServiceAlarm")
+    public ScheduledExecutorService getScheduledExecutorTaskforClearAlarmMails() {
+        ScheduledExecutorService sc = new ScheduledThreadPoolExecutor(5, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                int num = 0;
+                return new Thread(r, "saveAlarmForInterval-thread:" + num++);
+            }
+        });
+        return sc;
+    }
+
+    //    @Bean("old")
+    public ScheduledExecutorService OldgetScheduledExecutorTaskforClearAlarmMails() {
+        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, "saveAlarmForInterval-thread");
+            }
+        });
+        return executorService;
     }
 
 }

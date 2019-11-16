@@ -6,10 +6,15 @@ import com.botbrain.timer.core.model.XxlJobInfo;
 import com.botbrain.timer.core.model.XxlJobLog;
 import com.botbrain.timer.core.trigger.TriggerTypeEnum;
 import com.botbrain.timer.core.util.I18nUtil;
+import com.botbrain.timer.core.util.IntervalAlarmService;
+import com.botbrain.timer.core.util.MD5Util;
 import com.xxl.job.core.biz.model.ReturnT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.util.StringUtils;
 
 import javax.mail.internet.MimeMessage;
 import java.text.MessageFormat;
@@ -24,9 +29,13 @@ import java.util.concurrent.TimeUnit;
  *
  * @author xuxueli 2015-9-1 18:05:56
  */
+
 public class JobFailMonitorHelper {
+
+	@Autowired
+	private IntervalAlarmService intervalAlarmService;
 	private static Logger logger = LoggerFactory.getLogger(JobFailMonitorHelper.class);
-	
+
 	private static JobFailMonitorHelper instance = new JobFailMonitorHelper();
 	public static JobFailMonitorHelper getInstance(){
 		return instance;
@@ -71,7 +80,13 @@ public class JobFailMonitorHelper {
 								if (info!=null && info.getAlarmEmail()!=null && info.getAlarmEmail().trim().length()>0) {
 									boolean alarmResult = true;
 									try {
-										alarmResult = failAlarm(info, log);
+										String md=info.getId()+(StringUtils.isEmpty(info.getAlarmEmail())?"":info.getAlarmEmail());
+										Boolean canAlarm= intervalAlarmService.isHaveOrSave(MD5Util.string2MD5(md),40);
+										//是否能发送报警了
+										if(canAlarm){
+											alarmResult = failAlarm(info, log);
+										}
+
 									} catch (Exception e) {
 										alarmResult = false;
 										logger.error(e.getMessage(), e);

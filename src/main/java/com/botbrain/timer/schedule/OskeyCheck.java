@@ -29,7 +29,7 @@ public class OskeyCheck {
     @Resource
     private XxlJobInfoDao xxlJobInfoDao;
     @Autowired
-    private ScheduledExecutorService scheduledExecutorService;
+    private ScheduledExecutorService scheduledExecutorServiceCheck;
 
     public OskeyCheck() {
 
@@ -40,8 +40,8 @@ public class OskeyCheck {
         //初始化本地oskey
         initLocalOsk();
         //5分钟后启动定时任务，每12小时执行一次；
-        scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            System.out.println("当前线程是："+Thread.currentThread().getName());
+        scheduledExecutorServiceCheck.scheduleWithFixedDelay(() -> {
+            System.out.println("os_key 检测线程："+Thread.currentThread().getName());
             checkCenter();
         }, 2, 5, TimeUnit.SECONDS);
     }
