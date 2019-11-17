@@ -6,6 +6,8 @@ import com.botbrain.timer.core.model.XxlJobInfo;
 import com.botbrain.timer.core.trigger.TriggerTypeEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,7 +20,12 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author xuxueli 2019-05-21
  */
+@Service
 public class JobScheduleHelper {
+    
+    @Autowired
+    private XxlJobAdminConfig xxlJobAdminConfig;
+    
     private static Logger logger = LoggerFactory.getLogger(JobScheduleHelper.class);
 
     private static JobScheduleHelper instance = new JobScheduleHelper();
@@ -62,7 +69,7 @@ public class JobScheduleHelper {
                     boolean preReadSuc = true;
                     try {
 
-                        conn = XxlJobAdminConfig.getAdminConfig().getDataSource().getConnection();
+                        conn = xxlJobAdminConfig.getDataSource().getConnection();
                         connAutoCommit = conn.getAutoCommit();
                         conn.setAutoCommit(false);
 
@@ -73,7 +80,7 @@ public class JobScheduleHelper {
 
                         // 1、pre read
                         long nowTime = System.currentTimeMillis();
-                        List<XxlJobInfo> scheduleList = XxlJobAdminConfig.getAdminConfig().getXxlJobInfoDao().scheduleJobQuery(nowTime + PRE_READ_MS);
+                        List<XxlJobInfo> scheduleList = xxlJobAdminConfig.getXxlJobInfoDao().scheduleJobQuery(nowTime + PRE_READ_MS);
                         if (scheduleList!=null && scheduleList.size()>0) {
                             // 2、push time-ring
                             for (XxlJobInfo jobInfo: scheduleList) {
@@ -132,7 +139,7 @@ public class JobScheduleHelper {
 
                             // 3、update trigger info
                             for (XxlJobInfo jobInfo: scheduleList) {
-                                XxlJobAdminConfig.getAdminConfig().getXxlJobInfoDao().scheduleUpdate(jobInfo);
+                                xxlJobAdminConfig.getXxlJobInfoDao().scheduleUpdate(jobInfo);
                             }
 
                         } else {

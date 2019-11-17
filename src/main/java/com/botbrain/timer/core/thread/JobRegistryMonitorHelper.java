@@ -6,6 +6,8 @@ import com.botbrain.timer.core.model.XxlJobRegistry;
 import com.xxl.job.core.enums.RegistryConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,7 +19,12 @@ import java.util.concurrent.TimeUnit;
  * job registry instance
  * @author xuxueli 2016-10-02 19:10:24
  */
+@Service
 public class JobRegistryMonitorHelper {
+	
+	@Autowired
+	private XxlJobAdminConfig xxlJobAdminConfig;
+	
 	private static Logger logger = LoggerFactory.getLogger(JobRegistryMonitorHelper.class);
 
 	private static JobRegistryMonitorHelper instance = new JobRegistryMonitorHelper();
@@ -34,18 +41,18 @@ public class JobRegistryMonitorHelper {
 				while (!toStop) {
 					try {
 						// auto registry group
-						List<XxlJobGroup> groupList = XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().findByAddressType(0);
+						List<XxlJobGroup> groupList = xxlJobAdminConfig.getXxlJobGroupDao().findByAddressType(0);
 						if (groupList!=null && !groupList.isEmpty()) {
 
 							// remove dead address (admin/executor)
-							List<Integer> ids = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findDead(RegistryConfig.DEAD_TIMEOUT);
+							List<Integer> ids = xxlJobAdminConfig.getXxlJobRegistryDao().findDead(RegistryConfig.DEAD_TIMEOUT);
 							if (ids!=null && ids.size()>0) {
-								XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().removeDead(ids);
+								xxlJobAdminConfig.getXxlJobRegistryDao().removeDead(ids);
 							}
 
 							// fresh online address (admin/executor)
 							HashMap<String, List<String>> appAddressMap = new HashMap<String, List<String>>();
-							List<XxlJobRegistry> list = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findAll(RegistryConfig.DEAD_TIMEOUT);
+							List<XxlJobRegistry> list = xxlJobAdminConfig.getXxlJobRegistryDao().findAll(RegistryConfig.DEAD_TIMEOUT);
 							if (list != null) {
 								for (XxlJobRegistry item: list) {
 									if (RegistryConfig.RegistType.EXECUTOR.name().equals(item.getRegistryGroup())) {
@@ -76,7 +83,7 @@ public class JobRegistryMonitorHelper {
 									addressListStr = addressListStr.substring(0, addressListStr.length()-1);
 								}
 								group.setAddressList(addressListStr);
-								XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().update(group);
+								xxlJobAdminConfig.getXxlJobGroupDao().update(group);
 							}
 						}
 					} catch (Exception e) {

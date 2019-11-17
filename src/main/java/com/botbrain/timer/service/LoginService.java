@@ -6,6 +6,7 @@ import com.botbrain.timer.core.util.I18nUtil;
 import com.botbrain.timer.core.util.JacksonUtil;
 import com.botbrain.timer.dao.XxlJobUserDao;
 import com.xxl.job.core.biz.model.ReturnT;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.DigestUtils;
 
@@ -24,7 +25,8 @@ public class LoginService {
 
     @Resource
     private XxlJobUserDao xxlJobUserDao;
-
+    @Autowired
+    private I18nUtil i18nUtil;
 
     private String makeToken(XxlJobUser xxlJobUser){
         String tokenJson = JacksonUtil.writeValueAsString(xxlJobUser);
@@ -45,17 +47,17 @@ public class LoginService {
 
         // param
         if (username==null || username.trim().length()==0 || password==null || password.trim().length()==0){
-            return new ReturnT<String>(500, I18nUtil.getString("login_param_empty"));
+            return new ReturnT<String>(500, i18nUtil.getString("login_param_empty"));
         }
 
         // valid passowrd
         XxlJobUser xxlJobUser = xxlJobUserDao.loadByUserName(username);
         if (xxlJobUser == null) {
-            return new ReturnT<String>(500, I18nUtil.getString("login_param_unvalid"));
+            return new ReturnT<String>(500, i18nUtil.getString("login_param_unvalid"));
         }
         String passwordMd5 = DigestUtils.md5DigestAsHex(password.getBytes());
         if (!passwordMd5.equals(xxlJobUser.getPassword())) {
-            return new ReturnT<String>(500, I18nUtil.getString("login_param_unvalid"));
+            return new ReturnT<String>(500, i18nUtil.getString("login_param_unvalid"));
         }
 
         String loginToken = makeToken(xxlJobUser);

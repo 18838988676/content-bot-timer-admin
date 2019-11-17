@@ -4,6 +4,7 @@ import com.botbrain.timer.controller.annotation.PermissionLimit;
 import com.botbrain.timer.core.model.XxlJobUser;
 import com.botbrain.timer.core.util.I18nUtil;
 import com.botbrain.timer.service.LoginService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
@@ -22,6 +23,9 @@ public class PermissionInterceptor extends HandlerInterceptorAdapter {
 
 	@Resource
 	private LoginService loginService;
+
+	@Autowired
+	private I18nUtil i18nUtil;
 
 	@Override
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -48,7 +52,7 @@ public class PermissionInterceptor extends HandlerInterceptorAdapter {
 				return false;
 			}
 			if (needAdminuser && loginUser.getRole()!=1) {
-				throw new RuntimeException(I18nUtil.getString("system_permission_limit"));
+				throw new RuntimeException(i18nUtil.getString("system_permission_limit"));
 			}
 			request.setAttribute(LoginService.LOGIN_IDENTITY_KEY, loginUser);
 		}

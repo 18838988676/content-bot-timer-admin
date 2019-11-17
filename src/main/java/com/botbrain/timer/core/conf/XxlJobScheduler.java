@@ -20,9 +20,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,14 +35,20 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * @author xuxueli 2018-10-28 00:18:17
  */
-@Component
+@Component("xxlJobScheduler")
 @DependsOn("xxlJobAdminConfig")
-public class XxlJobScheduler implements InitializingBean, DisposableBean {
+public class XxlJobScheduler implements DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(XxlJobScheduler.class);
 
+    @Autowired
+    private I18nUtil i18nUtil;
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
+    @Autowired
+    private XxlJobAdminConfig xxlJobAdminConfig;
+
+
+    @PostConstruct
+    public void init() {
         // init i18n
         initI18n();
 
@@ -80,15 +88,16 @@ public class XxlJobScheduler implements InitializingBean, DisposableBean {
 
     // ---------------------- I18n ----------------------
 
-    private void initI18n(){
-        for (ExecutorBlockStrategyEnum item:ExecutorBlockStrategyEnum.values()) {
-            item.setTitle(I18nUtil.getString("jobconf_block_".concat(item.name())));
+    private void initI18n() {
+        for (ExecutorBlockStrategyEnum item : ExecutorBlockStrategyEnum.values()) {
+            item.setTitle(i18nUtil.getString("jobconf_block_".concat(item.name())));
         }
     }
 
     // ---------------------- admin rpc provider (no server version) ----------------------
     private static ServletServerHandler servletServerHandler;
-    private void initRpcProvider(){
+
+    private void initRpcProvider() {
         // init
         XxlRpcProviderFactory xxlRpcProviderFactory = new XxlRpcProviderFactory();
         xxlRpcProviderFactory.initConfig(
@@ -96,19 +105,21 @@ public class XxlJobScheduler implements InitializingBean, DisposableBean {
                 Serializer.SerializeEnum.HESSIAN.getSerializer(),
                 null,
                 0,
-                XxlJobAdminConfig.getAdminConfig().getAccessToken(),
+                xxlJobAdminConfig.getAccessToken(),
                 null,
                 null);
 
         // add services
-        xxlRpcProviderFactory.addService(AdminBiz.class.getName(), null, XxlJobAdminConfig.getAdminConfig().getAdminBiz());
+        xxlRpcProviderFactory.addService(AdminBiz.class.getName(), null, xxlJobAdminConfig.getAdminBiz());
 
         // servlet handler
         servletServerHandler = new ServletServerHandler(xxlRpcProviderFactory);
     }
+
     private void stopRpcProvider() throws Exception {
         XxlRpcInvokerFactory.getInstance().stop();
     }
+
     public static void invokeAdminService(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         servletServerHandler.handle(null, request, response);
     }
@@ -116,9 +127,10 @@ public class XxlJobScheduler implements InitializingBean, DisposableBean {
 
     // ---------------------- executor-client ----------------------
     private static ConcurrentMap<String, ExecutorBiz> executorBizRepository = new ConcurrentHashMap<String, ExecutorBiz>();
-    public static ExecutorBiz getExecutorBiz(String address) throws Exception {
+
+    public ExecutorBiz getExecutorBiz(String address) throws Exception {
         // valid
-        if (address==null || address.trim().length()==0) {
+        if (address == null || address.trim().length() == 0) {
             return null;
         }
 
@@ -139,7 +151,7 @@ public class XxlJobScheduler implements InitializingBean, DisposableBean {
                 null,
                 3000,
                 address,
-                XxlJobAdminConfig.getAdminConfig().getAccessToken(),
+                xxlJobAdminConfig.getAccessToken(),
                 null,
                 null).getObject();
 

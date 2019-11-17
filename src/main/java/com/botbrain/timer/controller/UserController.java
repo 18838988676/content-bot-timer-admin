@@ -8,6 +8,7 @@ import com.botbrain.timer.dao.XxlJobGroupDao;
 import com.botbrain.timer.dao.XxlJobUserDao;
 import com.botbrain.timer.service.LoginService;
 import com.xxl.job.core.biz.model.ReturnT;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.DigestUtils;
@@ -28,6 +29,9 @@ import java.util.Map;
 @Controller
 @RequestMapping("/user")
 public class UserController {
+
+    @Autowired
+    private I18nUtil i18nUtil;
 
     @Resource
     private XxlJobUserDao xxlJobUserDao;
@@ -71,19 +75,19 @@ public class UserController {
 
         // valid username
         if (!StringUtils.hasText(xxlJobUser.getUsername())) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("system_please_input")+I18nUtil.getString("user_username") );
+            return new ReturnT<String>(ReturnT.FAIL_CODE, i18nUtil.getString("system_please_input")+i18nUtil.getString("user_username") );
         }
         xxlJobUser.setUsername(xxlJobUser.getUsername().trim());
         if (!(xxlJobUser.getUsername().length()>=4 && xxlJobUser.getUsername().length()<=20)) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("system_lengh_limit")+"[4-20]" );
+            return new ReturnT<String>(ReturnT.FAIL_CODE, i18nUtil.getString("system_lengh_limit")+"[4-20]" );
         }
         // valid password
         if (!StringUtils.hasText(xxlJobUser.getPassword())) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("system_please_input")+I18nUtil.getString("user_password") );
+            return new ReturnT<String>(ReturnT.FAIL_CODE, i18nUtil.getString("system_please_input")+i18nUtil.getString("user_password") );
         }
         xxlJobUser.setPassword(xxlJobUser.getPassword().trim());
         if (!(xxlJobUser.getPassword().length()>=4 && xxlJobUser.getPassword().length()<=20)) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("system_lengh_limit")+"[4-20]" );
+            return new ReturnT<String>(ReturnT.FAIL_CODE, i18nUtil.getString("system_lengh_limit")+"[4-20]" );
         }
         // md5 password
         xxlJobUser.setPassword(DigestUtils.md5DigestAsHex(xxlJobUser.getPassword().getBytes()));
@@ -91,7 +95,7 @@ public class UserController {
         // check repeat
         XxlJobUser existUser = xxlJobUserDao.loadByUserName(xxlJobUser.getUsername());
         if (existUser != null) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("user_username_repeat") );
+            return new ReturnT<String>(ReturnT.FAIL_CODE, i18nUtil.getString("user_username_repeat") );
         }
 
         // write
@@ -107,14 +111,14 @@ public class UserController {
         // avoid opt login seft
         XxlJobUser loginUser = (XxlJobUser) request.getAttribute(LoginService.LOGIN_IDENTITY_KEY);
         if (loginUser.getUsername().equals(xxlJobUser.getUsername())) {
-            return new ReturnT<String>(ReturnT.FAIL.getCode(), I18nUtil.getString("user_update_loginuser_limit"));
+            return new ReturnT<String>(ReturnT.FAIL.getCode(), i18nUtil.getString("user_update_loginuser_limit"));
         }
 
         // valid password
         if (StringUtils.hasText(xxlJobUser.getPassword())) {
             xxlJobUser.setPassword(xxlJobUser.getPassword().trim());
             if (!(xxlJobUser.getPassword().length()>=4 && xxlJobUser.getPassword().length()<=20)) {
-                return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("system_lengh_limit")+"[4-20]" );
+                return new ReturnT<String>(ReturnT.FAIL_CODE, i18nUtil.getString("system_lengh_limit")+"[4-20]" );
             }
             // md5 password
             xxlJobUser.setPassword(DigestUtils.md5DigestAsHex(xxlJobUser.getPassword().getBytes()));
@@ -135,7 +139,7 @@ public class UserController {
         // avoid opt login seft
         XxlJobUser loginUser = (XxlJobUser) request.getAttribute(LoginService.LOGIN_IDENTITY_KEY);
         if (loginUser.getId() == id) {
-            return new ReturnT<String>(ReturnT.FAIL.getCode(), I18nUtil.getString("user_update_loginuser_limit"));
+            return new ReturnT<String>(ReturnT.FAIL.getCode(), i18nUtil.getString("user_update_loginuser_limit"));
         }
 
         xxlJobUserDao.delete(id);
@@ -152,7 +156,7 @@ public class UserController {
         }
         password = password.trim();
         if (!(password.length()>=4 && password.length()<=20)) {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("system_lengh_limit")+"[4-20]" );
+            return new ReturnT<String>(ReturnT.FAIL_CODE, i18nUtil.getString("system_lengh_limit")+"[4-20]" );
         }
 
         // md5 password

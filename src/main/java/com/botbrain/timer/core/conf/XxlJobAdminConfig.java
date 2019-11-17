@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 
@@ -18,17 +19,17 @@ import javax.sql.DataSource;
  *
  * @author xuxueli 2017-04-28
  */
-@Component
-public class XxlJobAdminConfig implements InitializingBean {
-    private static XxlJobAdminConfig adminConfig = null;
+@Component("xxlJobAdminConfig")
+public class XxlJobAdminConfig {
+    /*private static XxlJobAdminConfig adminConfig = null;
     public static XxlJobAdminConfig getAdminConfig() {
         return adminConfig;
-    }
+    }*/
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
+  /*  @PostConstruct
+    public void init(){
         adminConfig = this;
-    }
+    }*/
 
     // conf
     @Value("${xxl.job.i18n}")

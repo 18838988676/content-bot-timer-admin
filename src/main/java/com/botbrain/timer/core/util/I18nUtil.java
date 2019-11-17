@@ -4,11 +4,14 @@ import com.botbrain.timer.core.conf.XxlJobAdminConfig;
 import com.botbrain.timer.core.model.XxlJobInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.EncodedResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
+import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -20,17 +23,27 @@ import java.util.Properties;
  *
  * @author xuxueli 2018-01-17 20:39:06
  */
+@Service("i18nUtil")
 public class I18nUtil {
+
+    @Autowired
+    private XxlJobAdminConfig xxlJobAdminConfig;
     private static Logger logger = LoggerFactory.getLogger(I18nUtil.class);
 
-    private static Properties prop = null;
-    public static Properties loadI18nProp(){
+    private Properties prop = null;
+
+    @PostConstruct
+    public void init(){
+        loadI18nProp();
+    }
+
+    public Properties loadI18nProp(){
         if (prop != null) {
             return prop;
         }
         try {
             // build i18n prop
-            String i18n = XxlJobAdminConfig.getAdminConfig().getI18n();
+            String i18n = xxlJobAdminConfig.getI18n();
             i18n = (i18n!=null && i18n.trim().length()>0)?("_"+i18n):i18n;
             String i18nFile = MessageFormat.format("i18n/message{0}.properties", i18n);
 
@@ -50,7 +63,7 @@ public class I18nUtil {
      * @param key
      * @return
      */
-    public static String getString(String key) {
+    public String getString(String key) {
         return loadI18nProp().getProperty(key);
     }
 
@@ -60,7 +73,7 @@ public class I18nUtil {
      * @param keys
      * @return
      */
-    public static String getMultString(String... keys) {
+    public  String getMultString(String... keys) {
         Map<String, String> map = new HashMap<String, String>();
 
         Properties prop = loadI18nProp();
