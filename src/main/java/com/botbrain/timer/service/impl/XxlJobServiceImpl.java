@@ -1,5 +1,7 @@
 package com.botbrain.timer.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
+import com.botbrain.sdk.inner.client.config.ConfigFeignClient;
 import com.botbrain.timer.core.cron.CronExpression;
 import com.botbrain.timer.core.model.PageResults;
 import com.botbrain.timer.core.model.ResponseData;
@@ -20,6 +22,7 @@ import com.xxl.job.core.util.DateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -45,8 +48,8 @@ public class XxlJobServiceImpl implements XxlJobService {
 	public XxlJobLogDao xxlJobLogDao;
 	@Resource
 	private XxlJobLogGlueDao xxlJobLogGlueDao;
-//	@Autowired
-//	private ConfigFeignClient configFeignClient;
+	@Autowired
+	private ConfigFeignClient configFeignClient;
 	@Override
 	public Map<String, Object> pageList(int start, int length, int jobGroup, int triggerStatus, String jobDesc, String executorHandler, String author) {
 
@@ -155,10 +158,12 @@ public class XxlJobServiceImpl implements XxlJobService {
 		//{"任务ID":"2","任务名称":"百度公司执行点名任务","cron":"******","JobInfoGroupParentId":"1",......},
 		//{"任务ID":"3","任务名称":"新浪公司执行点名任务","cron":"******","JobInfoGroupParentId":"1",......},
 		// 不存在os_key问题时的任务添加：也会添加-1，只是列表页是否扩展问题上，会判断下该id下是否有子数据
+		ParamEntity paramEntity= new ParamEntity();
 		if(StringUtils.isEmpty(jobInfo.getExecutorParam())){
 			//任务中不带参数的；简单任务
 			jobInfo.setJobInfoGroupParentId(0);
-		}else if(!StringUtils.isEmpty(jobInfo.getExecutorParam())&&jobInfo.getExecutorParam().contains("{os_key}")){
+		}else if(!StringUtils.isEmpty(jobInfo.getExecutorParam())){
+			paramEntity=JSONObject.parseObject(jobInfo.getExecutorParam(),ParamEntity.class);
 			//任务中带参数，且参数带os_key；复杂任务
 			jobInfo.setJobInfoGroupParentId(-1);
 		}else {
@@ -171,25 +176,32 @@ public class XxlJobServiceImpl implements XxlJobService {
 		}
 
 		//先 判断一下 如果任务插入成功后并且任务中的执行参数url中带有os_key的话  就将各企业按照此任务配置进行批量配置
-		if(jobInfo.getId()>0&&jobInfo.getExecutorParam().contains("{os_key}")){
-//			List<Map<String, Object>> osList1 = configFeignClient.findAll(3, "").getData();
+		if(jobInfo.getId()>0){
+			String osType=StringUtils.isEmpty(paramEntity.getOsType())?"":paramEntity.getOsType();
+			List<Map<String, Object>> os = configFeignClient.findAll(Integer.parseInt(osType), null).getData();
+			if(CollectionUtils.isEmpty(os)){return new ReturnT<String>("获取os_key列表失败");}
 			List<String> osList=new ArrayList<>();
-			osList.add("百度");
-			osList.add("谷歌");
-			osList.add("SUN");
-			osList.add("微软");
+			for (Map<String,Object> o:os) {
+				osList.add((String) o.get("os_key"));
+			}
+//			List<String> osList=new ArrayList<>();
+//			osList.add("2WIQRCZAPA");
+//			osList.add("4TNNX4YCFF");
+//			osList.add("9JSPXUZPVD");
+//			osList.add("AF3NSIWP4X");
+			if(!CollectionUtils.isEmpty(paramEntity.getFilterOs())){
+				osList.removeAll(paramEntity.getFilterOs());
+			}
 			List<XxlJobInfo> xxlJobInfoList=new ArrayList<>(30);
-
 			for (String dataos : osList ) {
 				XxlJobInfo newXxlJobInfo=new XxlJobInfo();
 				BeanUtils.copyProperties(jobInfo,newXxlJobInfo);
 				newXxlJobInfo.setJobInfoGroupParentId(jobInfo.getId());
-				newXxlJobInfo.setExecutorParam(jobInfo.getExecutorParam().replace("{os_key}",dataos));
+				newXxlJobInfo.setExecutorParam(paramEntity.getUrl().replace("{os_key}",dataos));
 				newXxlJobInfo.setJobDesc(jobInfo.getJobDesc()+"任务下发到:"+dataos);
 				xxlJobInfoList.add(newXxlJobInfo);
 			}
 		int num=xxlJobInfoDao.saveBatch(xxlJobInfoList);
-			System.out.println(num);
 		}
 		return new ReturnT<String>(String.valueOf(jobInfo.getId()));
 	}
