@@ -134,7 +134,9 @@ public class JobInfoController {
 	@ResponseBody
 	public ReturnT<String> pauseBatch() {
 		String ids="1,2,3,4";
-		return xxlJobService.pauseBatch(null,ids);
+		Integer groupId=0;
+		List<Integer> childrenIds =new ArrayList<>();
+		return xxlJobService.pauseBatch(null,childrenIds);
 	}
 
 	@RequestMapping("/stop")
@@ -154,7 +156,9 @@ public class JobInfoController {
 	@ResponseBody
 	public ReturnT<String> startBatch() {
 		String ids="1,2,3,4";
-		return xxlJobService.startBatch(null,ids);
+		List<Integer> childrenIds=new ArrayList<>();
+		Integer parid=1;
+		return xxlJobService.startBatch(parid,childrenIds);
 	}
 
 	@RequestMapping("/trigger")

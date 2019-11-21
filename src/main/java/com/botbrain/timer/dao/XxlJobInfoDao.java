@@ -70,5 +70,8 @@ public interface XxlJobInfoDao {
 
 	List<Integer> findJobInfoConfigPublicId();
 
+	//根据任务id，获得该任务下的子任务id
+	List<Integer> findChildrenJobInfoIdByParentId(Integer parentId);
+
 //	public int deleteBatch(@Param("ids") List<Integer> ids,@Param("oskey") String str);
 }

@@ -86,9 +86,9 @@ public interface XxlJobService {
 	 */
 	public ReturnT<Map<String,Object>> chartInfo(Date startDate, Date endDate);
 
-    ReturnT<String> startBatch(String groupId, String ids);
+    ReturnT<String> startBatch(Integer groupId, List<Integer> ids);
 
-	ReturnT<String> pauseBatch(String groupId, String ids);
+	ReturnT<String> pauseBatch(Integer groupId, List<Integer> childrenIds );
 
 	ReturnT<String> removeBatch(String groupId, String ids);
 

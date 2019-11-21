@@ -36,7 +36,6 @@ public class IntervalAlarmServiceImpl implements IntervalAlarmService {
      * 剔除已经过期的key
      */
     private void removeOutOfData() {
-        System.out.println(Thread.currentThread().getName());
         long nowTime= System.currentTimeMillis();
         if (!CollectionUtils.isEmpty(concurrentHashMap)) {
             for (Map.Entry<String, Long> entry : concurrentHashMap.entrySet()) {

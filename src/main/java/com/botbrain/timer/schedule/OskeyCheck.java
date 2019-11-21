@@ -1,5 +1,6 @@
 package com.botbrain.timer.schedule;
 
+import com.botbrain.sdk.inner.client.config.ConfigFeignClient;
 import com.botbrain.timer.core.model.XxlJobInfo;
 import com.botbrain.timer.dao.XxlJobInfoDao;
 import org.springframework.beans.BeanUtils;
@@ -30,6 +31,9 @@ public class OskeyCheck {
     private XxlJobInfoDao xxlJobInfoDao;
     @Autowired
     private ScheduledExecutorService scheduledExecutorServiceCheck;
+
+    @Autowired
+    private ConfigFeignClient configFeignClient;
 
     public OskeyCheck() {
 

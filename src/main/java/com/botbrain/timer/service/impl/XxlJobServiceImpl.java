@@ -362,6 +362,13 @@ public class XxlJobServiceImpl implements XxlJobService {
         xxlJobInfo.setTriggerNextTime(nextTriggerTime);
 
         xxlJobInfoDao.update(xxlJobInfo);
+
+        //  启动这个任务后，判断下面有没有子任务，有的话 全部执行；
+        if(-1==xxlJobInfo.getJobInfoGroupParentId()){
+            // 获得该任务下的子任务的id;
+             List<Integer> childrenIds = xxlJobInfoDao.findChildrenJobInfoIdByParentId(xxlJobInfo.getId());
+            startBatch(xxlJobInfo.getId(),childrenIds);
+        }
         return ReturnT.SUCCESS;
     }
 
@@ -375,6 +382,15 @@ public class XxlJobServiceImpl implements XxlJobService {
         xxlJobInfo.setTriggerNextTime(0);
 
         xxlJobInfoDao.update(xxlJobInfo);
+
+        //  停止这个任务后，判断下面有没有子任务，有的话 全部停止；
+        if(-1==xxlJobInfo.getJobInfoGroupParentId()){
+            // 获得该任务下的子任务的id;
+            List<Integer> childrenIds = xxlJobInfoDao.findChildrenJobInfoIdByParentId(xxlJobInfo.getId());
+            pauseBatch(xxlJobInfo.getId(),childrenIds);
+        }
+
+
         return ReturnT.SUCCESS;
     }
 
@@ -471,12 +487,10 @@ public class XxlJobServiceImpl implements XxlJobService {
     }
 
     @Override
-    public ReturnT<String> startBatch(String groupId, String idstr) {
+    public ReturnT<String> startBatch(Integer groupId, List<Integer> childrenIds ) {
 
-        if (idstr != null && idstr.length() != 0) {
-            List<String> ids = Arrays.asList(idstr.split(","));
-            for (String id : ids) {
-                XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(Integer.parseInt(id));
+            for (Integer id : childrenIds) {
+                XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(id);
                 if (xxlJobInfo != null) {
                     // next trigger time (5s后生效，避开预读周期)
                     long nextTriggerTime = 0;
@@ -497,24 +511,20 @@ public class XxlJobServiceImpl implements XxlJobService {
 
                 }
             }
-        }
         return ReturnT.SUCCESS;
     }
 
 
     @Override
-    public ReturnT<String> pauseBatch(String groupId, String idstr) {
-        if (idstr != null && idstr.length() != 0) {
-            List<String> ids = Arrays.asList(idstr.split(","));
-            for (String id : ids) {
-                XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(Integer.parseInt(id));
+    public ReturnT<String> pauseBatch(Integer groupId, List<Integer> childrenIds) {
+            for (Integer id : childrenIds) {
+                XxlJobInfo xxlJobInfo = xxlJobInfoDao.loadById(id);
                 if (xxlJobInfo != null) {
                     xxlJobInfo.setTriggerStatus(0);
                     xxlJobInfo.setTriggerLastTime(0);
                     xxlJobInfo.setTriggerNextTime(0);
                     xxlJobInfoDao.update(xxlJobInfo);
                 }
-            }
         }
         return ReturnT.SUCCESS;
     }
